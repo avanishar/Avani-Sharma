@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CineVerse — Friday Night</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
+</head>
+
+
+<body>
+
+<!-- ========================================================
+     HEADER
+========================================================= -->
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brand-mark">
+            CV
+        </div>
+
+        <div>
+            <div class="brand-name">
+                CineVerse
+            </div>
+
+            <div class="brand-subtitle">
+                MULTIPLEX BOOKING
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="header-status">
+
+        <span class="status-dot"></span>
+
+        Live availability
+
+    </div>
+
+</header>
+
+
+
+<main class="page">
+
+
+<!-- ========================================================
+     HERO
+========================================================= -->
+
+<section class="hero-card">
+
+    <div class="hero-content">
+
+        <div class="eyebrow">
+            FRIDAY NIGHT AT THE MULTIPLEX
+        </div>
+
+        <h1>
+            Friday Night<br>
+            at the Multiplex
+        </h1>
+
+        <p class="hero-description">
+            Choose your seat tier, apply available offers,
+            and get an exact paisa-by-paisa booking total.
+        </p>
+
+
+        <div class="show-meta">
+
+            <div class="meta-item">
+
+                <div class="meta-icon">
+                    ▶
+                </div>
+
+                <div>
+                    <span class="meta-label">
+                        SHOW
+                    </span>
+
+                    <strong>
+                        Friday Night Show
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="meta-item">
+
+                <div class="meta-icon">
+                    ▣
+                </div>
+
+                <div>
+                    <span class="meta-label">
+                        SCREEN
+                    </span>
+
+                    <strong>
+                        Screen 1
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <div class="meta-item">
+
+                <div class="meta-icon">
+                    ◷
+                </div>
+
+                <div>
+                    <span class="meta-label">
+                        TIME
+                    </span>
+
+                    <strong>
+                        7:30 PM
+                    </strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="hero-poster">
+
+        <div class="poster-glow"></div>
+
+        <div class="poster-content">
+
+            <span>
+                CINE
+            </span>
+
+            <strong>
+                01
+            </strong>
+
+            <small>
+                FRIDAY NIGHT EXPERIENCE
+            </small>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================================================
+     OFFERS
+========================================================= -->
+
+<section class="offers-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="section-kicker">
+                TODAY'S OFFERS
+            </div>
+
+            <h2>
+                Save on your booking
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="offer-grid">
+
+
+        <div class="offer-card">
+
+            <div class="offer-icon">
+                %
+            </div>
+
+            <div>
+
+                <h3>
+                    Festival Offer
+                </h3>
+
+                <p>
+                    Flat ₹50 discount on the booking.
+                </p>
+
+            </div>
+
+            <div class="offer-tag">
+                ₹50 OFF
+            </div>
+
+        </div>
+
+
+        <div class="offer-card">
+
+            <div class="offer-icon">
+                ★
+            </div>
+
+            <div>
+
+                <h3>
+                    CineVerse Member
+                </h3>
+
+                <p>
+                    10% member discount, capped at ₹100.
+                </p>
+
+            </div>
+
+            <div class="offer-tag">
+                10% OFF
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================================================
+     BOOKING
+========================================================= -->
+
+<section class="booking-layout">
+
+
+    <!-- LEFT SIDE -->
+
+    <div>
+
+
+        <div class="section-heading">
+
+            <div>
+
+                <div class="section-kicker">
+                    SELECT YOUR SEATS
+                </div>
+
+                <h2>
+                    Available seat tiers
+                </h2>
+
+            </div>
+
+            <div class="seat-note">
+                Current show availability
+            </div>
+
+        </div>
+
+
+        <div class="screen-area">
+
+            <div class="screen"></div>
+
+            <div class="screen-label">
+                SCREEN
+            </div>
+
+        </div>
+
+
+        <div
+            id="ticket-grid"
+            class="ticket-grid"
+        >
+
+            <!-- Javascript inserts ticket cards -->
+
+        </div>
+
+
+        <!-- MEMBER -->
+
+        <div class="member-card">
+
+            <div class="member-left">
+
+                <div class="member-icon">
+                    ★
+                </div>
+
+                <div>
+
+                    <h3>
+                        CineVerse Membership
+                    </h3>
+
+                    <p>
+                        Apply the member discount to this booking.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <label class="toggle">
+
+                <input
+                    type="checkbox"
+                    id="member"
+                >
+
+                <span class="toggle-slider"></span>
+
+            </label>
+
+        </div>
+
+
+        <!-- ERROR -->
+
+        <div
+            id="error-box"
+            class="error-box hidden"
+        >
+
+            <strong>
+                Booking could not be calculated
+            </strong>
+
+            <span id="error-message"></span>
+
+        </div>
+
+
+        <!-- BUTTON -->
+
+        <button
+            id="calculate"
+            class="calculate-button"
+            type="button"
+        >
+
+            <span>
+                REVIEW BOOKING
+            </span>
+
+            <span class="button-arrow">
+                →
+            </span>
+
+        </button>
+
+    </div>
+
+
+
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
+
+    <aside class="summary-card">
+
+
+        <div class="summary-header">
+
+            <div>
+
+                <div class="section-kicker">
+                    YOUR BOOKING
+                </div>
+
+                <h2>
+                    Price summary
+                </h2>
+
+            </div>
+
+
+            <div class="ticket-count-badge">
+
+                <span id="ticket-count">
+                    0
+                </span>
+
+                tickets
+
+            </div>
+
+        </div>
+
+
+        <div
+            id="empty-summary"
+            class="empty-summary"
+        >
+
+            <div class="empty-icon">
+                🎟
+            </div>
+
+            <h3>
+                No tickets selected
+            </h3>
+
+            <p>
+                Choose a seat tier on the left
+                to build your booking.
+            </p>
+
+        </div>
+
+
+        <div
+            id="price-summary"
+            class="price-summary hidden"
+        >
+
+            <div id="bill-lines"></div>
+
+
+            <div class="summary-divider"></div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Festival discount
+                </span>
+
+                <strong
+                    id="festival-discount"
+                    class="discount-row"
+                >
+                    ₹0.00
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Member discount
+                </span>
+
+                <strong
+                    id="member-discount"
+                >
+                    ₹0.00
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Convenience fee
+                </span>
+
+                <strong id="convenience-fee">
+                    ₹0.00
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    GST
+                </span>
+
+                <strong id="gst">
+                    ₹0.00
+                </strong>
+
+            </div>
+
+
+            <div class="summary-divider"></div>
+
+
+            <div class="total-row">
+
+                <div>
+
+                    <span>
+                        Total
+                    </span>
+
+                    <small>
+                        Inclusive of GST
+                    </small>
+
+                </div>
+
+                <strong id="final-total">
+                    ₹0.00
+                </strong>
+
+            </div>
+
+
+            <div class="secure-note">
+
+                <span>
+                    ●
+                </span>
+
+                Exact paisa calculation
+
+            </div>
+
+        </div>
+
+    </aside>
+
+</section>
+
+
+
+<!-- ========================================================
+     PRICE IMPORTER
+========================================================= -->
+
+<section
+    class="offers-section"
+    id="import-section"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="section-kicker">
+                BUILDER TWIST
+            </div>
+
+            <h2>
+                Import messy seat prices
+            </h2>
+
+        </div>
+
+        <div class="seat-note">
+            Clean • Validate • De-duplicate
+        </div>
+
+    </div>
+
+
+    <div class="offer-card">
+
+        <div style="width: 100%;">
+
+            <h3>
+                Messy price list
+            </h3>
+
+            <p style="margin-bottom: 12px;">
+                Paste JSON records containing inconsistent
+                names, prices, blanks, or invalid values.
+            </p>
+
+
+            <textarea
+                id="price-input"
+                rows="9"
+                style="
+                    width: 100%;
+                    resize: vertical;
+                    margin-top: 12px;
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,.09);
+                    background: #08090d;
+                    color: #f7f7f8;
+                    font-family: monospace;
+                    font-size: 12px;
+                "
+            >[
+  {"name":"Silver","price":"₹150"},
+  {"name":" GOLD ","price":"250.00"},
+  {"name":"gold","price":"₹250"},
+  {"name":"Recliner","price":"400"},
+  {"name":"RECLINER","price":"₹400.00"},
+  {"name":"Silver","price":""},
+  {"name":"Balcony","price":"-200"},
+  {"name":"","price":"300"},
+  {"name":"Premium","price":"abc"}
+]</textarea>
+
+
+            <button
+                id="import-button"
+                class="calculate-button"
+                type="button"
+            >
+
+                <span>
+                    IMPORT & CLEAN PRICE LIST
+                </span>
+
+                <span class="button-arrow">
+                    →
+                </span>
+
+            </button>
+
+
+            <div
+                id="import-error"
+                class="error-box hidden"
+            >
+
+                <strong>
+                    Import failed
+                </strong>
+
+                <span id="import-error-message"></span>
+
+            </div>
+
+
+            <div
+                id="import-result"
+                class="hidden"
+                style="margin-top: 20px;"
+            >
+
+                <div class="offer-grid">
+
+                    <div class="offer-card">
+
+                        <div class="offer-icon">
+                            ↓
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Imported
+                            </h3>
+
+                            <p id="imported-count">
+                                0
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="offer-card">
+
+                        <div class="offer-icon">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Accepted
+                            </h3>
+
+                            <p id="accepted-count">
+                                0
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="offer-card">
+
+                        <div class="offer-icon">
+                            ≈
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Duplicates
+                            </h3>
+
+                            <p id="duplicate-count">
+                                0
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="offer-card">
+
+                        <div class="offer-icon">
+                            !
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Rejected
+                            </h3>
+
+                            <p id="rejected-count">
+                                0
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="offer-card"
+                    style="margin-top: 14px;"
+                >
+
+                    <div style="width: 100%;">
+
+                        <h3>
+                            Clean price list
+                        </h3>
+
+                        <div id="clean-price-list"></div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="rejected-list"
+                    class="offer-card"
+                    style="margin-top: 14px;"
+                >
+
+                    <div style="width: 100%;">
+
+                        <h3>
+                            Rejected records
+                        </h3>
+
+                        <div id="rejected-records"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <span>
+        CineVerse • Friday Night Show
+    </span>
+
+    <span>
+        Pricing engine • Integer paise • GST
+    </span>
+
+</footer>
+
+
+</main>
+
+
+<script src="/static/script.js"></script>
+
+</body>
+
+</html>

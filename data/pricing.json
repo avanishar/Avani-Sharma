@@ -1,0 +1,39 @@
+{
+  "cinemas": {
+    "C001": {
+      "name": "CineVerse",
+      "shows": {
+        "S001": {
+          "name": "Friday Night Show",
+          "movie": "Friday Night at the Multiplex",
+          "screen": "Screen 1",
+          "time": "7:30 PM",
+          "tiers": {
+            "SILVER": {
+              "price_paise": 15000,
+              "available": true,
+              "available_seats": 42
+            },
+            "GOLD": {
+              "price_paise": 25000,
+              "available": true,
+              "available_seats": 18
+            },
+            "RECLINER": {
+              "price_paise": 40000,
+              "available": false,
+              "available_seats": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "offers": {
+    "festival_discount_paise": 5000,
+    "member_discount_percent": 10,
+    "member_discount_cap_paise": 10000
+  },
+  "convenience_fee_per_ticket_paise": 2000,
+  "gst_percent": 18
+}
