@@ -1,121 +1,174 @@
-# Reasoning
+# Reasoning Behind the Solution
 
-## How I approached the problem
+## 1. How I approached the problem
 
-I started by treating the pricing engine as the most important part of the project.
+I treated the pricing calculation as the core of the application. The frontend is mainly there to make the system easy to use and demonstrate, while the backend is responsible for deciding whether a booking is valid and what it should cost.
 
-The frontend is useful for demonstrating the application, but the actual price calculation should not depend on what the browser is doing. If the frontend and backend had separate pricing calculations, they could eventually disagree.
+My main goal was to make the pricing logic:
 
-So I decided to keep the pricing rules in Python and make the frontend call the backend whenever a booking total is needed.
+* Correct
+* Reusable
+* Configurable
+* Easy to test
+* Safe for money calculations
+* Independent of the frontend
 
-The basic flow became:
+The overall flow is:
 
 ```text
-Booking request
+Booking Request
       ↓
-Validation
+Input Validation
       ↓
-Check cinema/show
+Cinema / Show Validation
       ↓
-Check ticket tiers
+Ticket Tier Validation
       ↓
-Check availability
+Seat Availability Check
       ↓
-Calculate subtotal
+Ticket Subtotal
       ↓
-Apply discounts
+Festival Discount
       ↓
-Add convenience fee
+Member Discount + Cap
       ↓
-Calculate GST
+Convenience Fee
       ↓
-Return itemized bill
+GST
+      ↓
+Itemized Bill
 ```
 
 ---
 
-## Why I used integer paise
+## 2. Why the pricing logic is in the backend
 
-Money was one of the parts I wanted to be careful with.
+I decided not to calculate prices independently in JavaScript.
 
-Using normal Python floating-point numbers for money can introduce small precision problems. Since the problem specifically asks for the exact paisa, I decided to store all money internally as integers representing paise.
-
-For example:
+The frontend only collects the customer's choices and sends them to:
 
 ```text
-₹150.00 = 15000 paise
-₹250.00 = 25000 paise
+POST /calculate-price
 ```
 
-This means the calculations remain predictable and there is no need to round floating-point values at different stages.
+The Python pricing engine then performs the actual calculation.
+
+This gives the application one source of truth.
+
+If the frontend calculated GST or discounts separately, there would be a risk that the frontend and backend could produce different totals.
+
+Keeping the business rules in the backend also means the same pricing engine could be used by another frontend or a cinema counter application later.
 
 ---
 
-## Pricing order
+## 3. Why I used integer paise
 
-I chose one explicit pricing order and kept it in the pricing engine:
+Money calculations need to be exact.
+
+Instead of using floating-point values such as:
+
+```python
+150.00
+```
+
+the application stores money as integer paise:
+
+```text
+₹150.00 → 15000 paise
+₹250.00 → 25000 paise
+₹400.50 → 40050 paise
+```
+
+This avoids floating-point precision issues and makes the final amount deterministic.
+
+The final response still converts the value into rupees for display, but the actual calculation is performed using integer paise.
+
+---
+
+## 4. Pricing order
+
+The pricing engine follows one explicit order:
 
 ```text
 1. Calculate ticket subtotal
 2. Apply festival discount
-3. Apply member discount
+3. Calculate member discount
 4. Apply member discount cap
 5. Add convenience fee
 6. Calculate GST
 7. Calculate final total
 ```
 
-The important thing here is that the order is deliberate.
+I kept the order explicit because changing the order of discounts, fees and taxes can change the final price.
 
-For example, the member discount is calculated after the festival discount. GST is calculated on the discounted ticket amount plus the convenience fee.
+For example, the member discount is calculated after the festival discount.
 
-I documented this instead of leaving the order implicit.
+GST is calculated on:
+
+```text
+discounted ticket subtotal + convenience fee
+```
+
+This rule is implemented consistently in the pricing engine.
 
 ---
 
-## Discounts
-
-There are two different discount types.
-
-### Festival discount
+## 5. Festival discount
 
 The festival offer is a flat discount.
 
-I also made sure that the discount cannot become larger than the subtotal.
+The discount cannot reduce the ticket subtotal below zero.
 
-For example, if the subtotal were lower than the festival discount, the customer should not end up with a negative ticket amount.
-
-The calculation therefore uses the smaller of:
+The calculation therefore uses the smaller value between:
 
 ```text
-festival discount
+configured festival discount
 subtotal
 ```
 
-### Member discount
-
-The member discount is percentage based.
-
-The percentage is calculated after the festival discount, and then the configured maximum cap is applied.
-
-This makes the cap an actual limit rather than just displaying it in the frontend.
+For example, if the festival discount is ₹50 but the ticket subtotal is only ₹30, the discount becomes ₹30 rather than producing a negative ticket value.
 
 ---
 
-## Availability
+## 6. Member discount
 
-I wanted availability to be checked by the backend, not just by the UI.
+The member offer is percentage based.
 
-The frontend disables the controls when a tier is unavailable, but that is only a user-interface convenience.
+For a member booking, the configured percentage is applied after the festival discount.
 
-The pricing engine checks again:
+The resulting member discount is then compared with the configured maximum cap.
+
+The actual discount is therefore:
 
 ```text
-Is the tier available?
-Is the requested quantity within the available seat count?
+minimum(
+    calculated percentage discount,
+    member discount cap
+)
 ```
 
-This means a request cannot become valid simply because somebody bypasses the frontend.
+This keeps the cap enforced by the backend rather than relying on the frontend to display it correctly.
+
+---
+
+## 7. Ticket availability
+
+Availability is part of the business logic, so it is checked by the backend.
+
+Each tier can contain:
+
+```json
+{
+    "price_paise": 25000,
+    "available": true,
+    "available_seats": 18
+}
+```
+
+The engine checks both:
+
+1. Whether the tier is available.
+2. Whether the requested quantity is within the available seat count.
 
 For the sample configuration:
 
@@ -125,139 +178,153 @@ Gold       18 seats
 Recliner    0 seats
 ```
 
-Recliner therefore behaves as sold out.
+Recliner is therefore treated as sold out.
+
+The frontend also disables unavailable options, but this is only a user-interface improvement. The backend performs the real validation so that a request cannot bypass the availability rules simply by avoiding the frontend.
 
 ---
 
-## Configuration instead of hard-coding
+## 8. Configuration-driven pricing
 
-I kept cinema/show information and pricing settings in:
+I kept cinema, show, ticket, offer, fee and tax information in:
 
 ```text
 data/pricing.json
 ```
 
-The goal was to avoid writing things like:
+instead of hard-coding prices throughout the Python code.
 
-```python
-if tier == "GOLD":
-    price = 25000
-```
+This makes the pricing engine reusable.
 
-throughout the pricing engine.
+For example, changing a Gold ticket from ₹250 to another price should only require changing the configuration rather than rewriting the pricing algorithm.
 
-Instead, the engine reads the configuration.
-
-That makes it easier to change the cinema, show, prices, availability, discounts, fees, or GST without rewriting the calculation logic.
+The same approach can be extended to additional cinemas and shows.
 
 ---
 
-## Validation
+## 9. Request validation
 
-I wanted invalid input to fail early.
+I used Pydantic models for request validation.
 
-The request models therefore validate things such as:
+The booking request checks things such as:
 
-- Quantity must be greater than zero
-- Quantity cannot exceed the configured request limit
-- Ticket list cannot be empty
-- Ticket tiers cannot be duplicated
-- Membership must be a boolean
-- Ticket tiers must be valid values
+* A cinema ID is provided.
+* A show ID is provided.
+* At least one ticket is selected.
+* Quantity is a positive integer.
+* Quantity cannot exceed the configured request limit.
+* Duplicate ticket tiers are rejected.
+* Membership must be a boolean value.
 
-The pricing engine then handles business-level validation such as:
+Business-level checks are then handled by the pricing engine.
 
-- Cinema exists
-- Show exists
-- Tier exists in that show
-- Tier is available
-- Requested quantity does not exceed available seats
+These include:
 
-I kept these two types of validation separate because they solve different problems.
+* Cinema exists.
+* Show exists.
+* Ticket tier exists.
+* Ticket tier is available.
+* Requested quantity does not exceed available seats.
+
+This separates basic input validation from business rules.
 
 ---
 
-## Why duplicate ticket tiers are rejected
+## 10. Why duplicate ticket tiers are rejected
 
-A booking request could technically contain:
+A request such as:
 
 ```text
 GOLD × 2
 GOLD × 3
 ```
 
-but I decided that this should be rejected instead of silently merging the two lines.
-
-This keeps the request format predictable.
-
-If a customer wants five Gold tickets, the request should simply say:
+could technically be merged into:
 
 ```text
 GOLD × 5
 ```
 
----
+but I decided not to do that automatically.
 
-# Messy price-list importer
+Instead, duplicate tiers are rejected.
 
-The additional challenge required handling a price list that was not clean.
+This keeps the request structure predictable and prevents accidental merging of separate lines.
 
-I treated the importer as a separate component rather than mixing it into the pricing calculation.
-
-Its flow is:
+A valid request should simply use:
 
 ```text
-Messy records
-      ↓
-Normalize names
-      ↓
-Validate seat class
-      ↓
-Parse price
-      ↓
-Reject invalid records
-      ↓
-Detect duplicates
-      ↓
-Create clean price list
-      ↓
-Return import report
+GOLD × 5
+```
+
+when five Gold tickets are required.
+
+---
+
+# 11. Messy price-list importer
+
+The additional challenge was handled as a separate module:
+
+```text
+backend/price_importer.py
+```
+
+I kept it separate from the pricing engine because importing and cleaning data is a different responsibility from calculating a booking.
+
+The importer follows:
+
+```text
+Messy Input
+     ↓
+Normalize Name
+     ↓
+Validate Seat Class
+     ↓
+Parse Price
+     ↓
+Reject Invalid Records
+     ↓
+Detect Duplicates
+     ↓
+Create Clean Price List
+     ↓
+Generate Import Report
 ```
 
 ---
 
-## Normalizing seat-class names
+## 12. Normalizing seat-class names
 
-Names can arrive in different forms:
+The input can contain names such as:
 
 ```text
 Silver
- silver
+silver
  SILVER
   Silver
 ```
 
-These should represent the same seat class.
+These should represent the same ticket tier.
 
-I therefore trim whitespace and convert names to uppercase.
+The importer therefore:
 
-So all of the examples above become:
+1. Removes unnecessary whitespace.
+2. Converts the name to uppercase.
+3. Checks it against the supported ticket tiers.
+
+The normalized result is:
 
 ```text
 SILVER
 ```
 
-The same approach is used for Gold and Recliner.
+The same process is used for Gold and Recliner.
 
 ---
 
-## Handling duplicate names
+## 13. Handling duplicates
 
-After normalization, duplicate names are detected.
-
-I chose:
-
-> The first valid occurrence wins.
+Duplicates are detected after normalization.
 
 For example:
 
@@ -266,21 +333,23 @@ Silver → ₹150
 silver → ₹160
 ```
 
-results in:
+are treated as duplicates because both normalize to:
 
 ```text
-SILVER → ₹150
+SILVER
 ```
 
-and the second record is reported as a duplicate.
+I chose a simple rule:
 
-I chose this because silently replacing an earlier value could make the imported data change depending on the order in which records were processed.
+> The first valid occurrence wins.
+
+The later record is not silently discarded. It is reported as a duplicate so that the person importing the data knows what happened.
 
 ---
 
-## Handling prices
+## 14. Handling inconsistent prices
 
-The importer accepts normal price representations such as:
+The importer accepts reasonable variations such as:
 
 ```text
 150
@@ -290,129 +359,133 @@ The importer accepts normal price representations such as:
 "₹150.50"
 ```
 
-The value is converted into integer paise.
+and converts them to integer paise.
 
 For example:
 
 ```text
-₹150.50 → 15050
+₹150.50
 ```
 
-Negative prices are rejected.
+becomes:
 
-Blank prices are rejected.
+```text
+15050 paise
+```
 
-Values that do not look like valid monetary amounts are also rejected.
+This allows the pricing system to work with one consistent internal representation even when the input data is messy.
 
 ---
 
-## Unknown seat classes
+## 15. Rejected prices and records
 
-The application currently supports:
+The importer rejects:
 
-```text
-SILVER
-GOLD
-RECLINER
-```
+* Blank prices
+* Negative prices
+* Invalid price formats
+* Blank seat-class names
+* Unknown seat classes
 
-If the imported file contains something such as:
+Instead of simply throwing away bad records, the importer reports the row and the reason for rejection.
 
-```text
-BALCONY
-PREMIUM
-VIP
-```
-
-it is reported as an unknown seat class rather than being silently added.
-
-This keeps the cleaned list consistent with the pricing model.
+This makes the importer useful for cleaning real-world data rather than just accepting or rejecting the entire file.
 
 ---
 
-## Reporting rejected records
+## 16. Why the frontend does not duplicate importer logic
 
-I did not want the importer to simply return:
-
-```text
-Invalid data
-```
-
-Instead, every rejected record includes its row number and a reason.
-
-For example:
+The frontend sends the raw imported records to:
 
 ```text
-Row 6
-Price cannot be blank.
-
-Row 7
-Unknown seat class 'BALCONY'.
-
-Row 8
-Seat class name cannot be blank.
-
-Row 9
-Unknown seat class 'PREMIUM'.
+POST /import-price-list
 ```
 
-This makes the importer easier to debug and more useful to someone working with a real messy data file.
+The backend performs the cleaning and validation.
+
+The frontend then displays:
+
+```text
+Imported
+Accepted
+Duplicates
+Rejected
+```
+
+as well as the cleaned list and rejected-record reasons.
+
+This follows the same principle as the pricing engine: business rules remain on the backend.
 
 ---
 
-# Frontend decision
+## 17. API design
 
-I deliberately kept the frontend separate from the pricing logic.
+The application uses FastAPI with a small number of focused endpoints.
 
-The browser handles:
+### Health check
 
-- Displaying available tiers
-- Selecting quantities
-- Showing errors
-- Sending the booking
-- Displaying the returned bill
-- Sending messy price-list data
-- Displaying the import report
+```text
+GET /health
+```
 
-The backend handles:
+Used to confirm that the backend is running.
 
-- Validation
-- Pricing
-- Discounts
-- Fees
-- GST
-- Availability
-- Import cleaning
+### Calculate booking price
 
-This avoids having the same business rules implemented twice.
+```text
+POST /calculate-price
+```
+
+Receives the booking and returns the complete itemized price calculation.
+
+### Import price list
+
+```text
+POST /import-price-list
+```
+
+Receives the messy price list and returns the cleaned data and import report.
+
+The frontend and backend can therefore be tested independently.
 
 ---
 
-# Testing approach
+## 18. Testing strategy
 
-I wrote tests around the parts where mistakes are most likely.
+I used Pytest to test the pricing engine and importer.
 
-For pricing, I tested:
+The pricing tests cover:
 
-- Normal bookings
-- Multiple tiers
-- Discounts
-- Discount caps
-- GST
-- Fees
-- Invalid inputs
-- Sold-out tiers
-- Available-seat limits
+* Single-ticket pricing
+* Multiple ticket tiers
+* Festival discount
+* Member discount
+* Member discount cap
+* Convenience fee
+* GST
+* Complete booking calculation
+* Invalid cinema
+* Invalid show
+* Zero quantity
+* Negative quantity
+* Empty ticket list
+* Non-integer quantity
+* String quantity
+* Duplicate ticket tiers
+* Excessive quantity
+* Invalid member value
+* Sold-out tiers
+* Available-seat limits
 
-For the importer, I tested:
+The importer tests cover:
 
-- Name normalization
-- Price parsing
-- Negative prices
-- Blank prices
-- Duplicate names
-- Unknown tiers
-- A complete messy input example
+* Name normalization
+* Price conversion
+* Negative prices
+* Blank prices
+* Messy input
+* Duplicate names
+* Unknown ticket tiers
 
 The final test run was:
 
@@ -422,20 +495,100 @@ The final test run was:
 
 ---
 
-# What I would improve with more time
+## 19. Frontend design decision
 
-The current version focuses on the pricing engine and the importer rather than building a complete commercial booking system.
+I kept the frontend as a single page instead of creating several pages.
+
+The main booking page contains:
+
+* Movie/show information
+* Current screen and time
+* Offer information
+* Ticket tiers
+* Seat availability
+* Quantity controls
+* Membership option
+* Booking summary
+* Exact final amount
+* Price-list importer
+
+The goal was to make the core functionality easy to demonstrate without adding unnecessary complexity.
+
+---
+
+## 20. Handling unspecified rules
+
+Some numerical rules in the assignment were not explicitly provided.
+
+Instead of pretending that those values came from the assignment, I kept the sample values in configuration and treated them as project assumptions.
+
+For example:
+
+```text
+Silver     ₹150
+Gold       ₹250
+Recliner   ₹400
+Festival   ₹50
+Member     10%
+Member cap ₹100
+Fee        ₹20/ticket
+GST        18%
+```
+
+These are demonstration values and can be changed through configuration.
+
+This prevents assumptions from becoming hidden business logic.
+
+---
+
+## 21. What I would improve with more time
+
+The current implementation focuses on the pricing engine and the required importer.
 
 With more time, I would consider adding:
 
-- Persistent seat inventory
-- Actual seat selection
-- Booking IDs
-- Database-backed bookings
-- Multiple cinemas and shows through the UI
-- Authentication
-- Better API error status codes
-- Importing CSV files directly
-- More extensive integration tests
+* Persistent seat inventory
+* Actual seat-number selection
+* Database-backed bookings
+* Booking IDs
+* Multiple cinemas and shows in the UI
+* CSV file upload for price lists
+* Authentication
+* More integration tests
+* More detailed API error status handling
 
-I intentionally did not add these features just for the sake of making the project larger. The main goal was to make the pricing calculation correct, testable, configurable, and easy to demonstrate.
+I intentionally kept these outside the current implementation so that the core pricing and import requirements could be completed, tested and demonstrated reliably.
+
+---
+
+## 22. Final outcome
+
+The final solution is designed around one main principle:
+
+> The backend should be able to give the same correct price every time for the same valid booking.
+
+The frontend makes the process easy to use, while the backend owns the pricing and validation rules.
+
+The final project successfully combines:
+
+```text
+Configuration
+      +
+Validation
+      +
+Pricing Engine
+      +
+Availability
+      +
+Price Importer
+      +
+Automated Tests
+      +
+Frontend
+```
+
+with the final automated test result:
+
+```text
+29 passed
+```
